@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bingo Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet" />
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --gold: #f5c842;
+  --gold-dark: #b8922a;
+  --bg-dark: #0d1117;
+  --bg-panel: #161b22;
+  --bg-card: #1c2128;
+  --border: #30363d;
+  --text-bright: #e6edf3;
+  --text-muted: #8b949e;
+  --green: #3fb950;
+  --red: #f85149;
+  --blue: #58a6ff;
+}
+body { background: var(--bg-dark); color: var(--text-bright); font-family: 'Exo 2', sans-serif; min-height: 100vh; }
+.container { max-width: 700px; margin: 0 auto; padding: 16px; }
+
+.header { text-align: center; padding: 24px 0 16px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.header h1 { font-family: 'Orbitron', monospace; font-size: 36px; font-weight: 900; color: var(--gold); letter-spacing: 4px; text-shadow: 0 0 20px rgba(245,200,66,0.4); }
+.header p { color: var(--text-muted); font-size: 13px; margin-top: 6px; letter-spacing: 1px; }
+
+.balance-bar { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.balance-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.balance-amount { font-family: 'Orbitron', monospace; font-size: 22px; font-weight: 700; color: var(--gold); }
+.balance-btns { display: flex; gap: 8px; }
+.btn-sm { background: transparent; border: 1px solid var(--border); color: var(--text-bright); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-family: 'Exo 2', sans-serif; transition: all 0.15s; }
+.btn-sm:hover { border-color: var(--gold); color: var(--gold); }
+
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* SETUP */
+.setup-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 40px; text-align: center; }
+.setup-card h2 { font-family: 'Orbitron', monospace; font-size: 20px; color: var(--gold); margin-bottom: 8px; }
+.setup-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 28px; }
+.money-input { display: flex; align-items: center; gap: 12px; max-width: 320px; margin: 0 auto 28px; }
+.money-input input { flex: 1; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-bright); padding: 14px 16px; border-radius: 8px; font-size: 18px; font-family: 'Orbitron', monospace; text-align: center; outline: none; }
+.money-input input:focus { border-color: var(--gold); }
+.money-input span { color: var(--text-muted); font-size: 14px; white-space: nowrap; }
+.btn-start { background: var(--gold); color: #000; border: none; padding: 14px 44px; border-radius: 8px; font-family: 'Orbitron', monospace; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 2px; transition: all 0.2s; }
+.btn-start:hover { background: var(--gold-dark); transform: translateY(-1px); }
+
+/* MENU */
+.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.menu-btn { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px 16px; cursor: pointer; transition: all 0.2s; text-align: left; color: var(--text-bright); font-family: 'Exo 2', sans-serif; }
+.menu-btn:hover { border-color: var(--gold); background: rgba(245,200,66,0.05); transform: translateY(-2px); }
+.menu-btn .m-num { font-family: 'Orbitron', monospace; font-size: 11px; color: var(--gold); margin-bottom: 6px; letter-spacing: 1px; }
+.menu-btn .m-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.menu-btn .m-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+.menu-btn.full { grid-column: 1/-1; display: flex; align-items: center; gap: 16px; }
+.menu-btn.full .m-info { flex: 1; }
+
+/* GAME SCREEN */
+.back-btn { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-family: 'Exo 2', sans-serif; margin-bottom: 16px; transition: all 0.15s; }
+.back-btn:hover { border-color: var(--text-muted); color: var(--text-bright); }
+.game-title { font-family: 'Orbitron', monospace; font-size: 16px; color: var(--gold); margin-bottom: 20px; letter-spacing: 2px; }
+
+.bingo-balls { display: flex; gap: 16px; justify-content: center; margin-bottom: 24px; }
+.ball { width: 80px; height: 80px; border-radius: 50%; background: var(--bg-card); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', monospace; font-size: 30px; font-weight: 900; color: var(--text-muted); transition: all 0.4s; }
+.ball.revealed { border-color: var(--gold); color: var(--gold); background: rgba(245,200,66,0.1); box-shadow: 0 0 24px rgba(245,200,66,0.3); animation: pop 0.4s ease; }
+@keyframes pop { 0%{transform:scale(0.5);opacity:0} 60%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
+
+.section-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+
+.num-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin-bottom: 20px; }
+.num-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-bright); padding: 14px; border-radius: 8px; cursor: pointer; font-family: 'Orbitron', monospace; font-size: 20px; font-weight: 700; transition: all 0.15s; text-align: center; }
+.num-btn:hover { border-color: var(--gold); color: var(--gold); }
+.num-btn.selected { background: rgba(245,200,66,0.2); border-color: var(--gold); color: var(--gold); }
+
+.choice-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+.choice-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-bright); padding: 18px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; font-family: 'Exo 2', sans-serif; transition: all 0.15s; text-align: center; }
+.choice-btn:hover { border-color: var(--blue); color: var(--blue); }
+.choice-btn.selected { background: rgba(88,166,255,0.15); border-color: var(--blue); color: var(--blue); }
+.choice-btn .sub { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-weight: 400; }
+
+.bet-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.bet-row label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+.bet-row input { flex: 1; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-bright); padding: 12px 14px; border-radius: 8px; font-size: 16px; font-family: 'Orbitron', monospace; outline: none; }
+.bet-row input:focus { border-color: var(--gold); }
+.quick-bets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+.quick-bet { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-family: 'Exo 2', sans-serif; transition: all 0.15s; }
+.quick-bet:hover { border-color: var(--gold); color: var(--gold); }
+
+.btn-spin { width: 100%; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: #000; border: none; padding: 16px; border-radius: 10px; font-family: 'Orbitron', monospace; font-size: 15px; font-weight: 900; cursor: pointer; letter-spacing: 3px; transition: all 0.2s; }
+.btn-spin:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(245,200,66,0.3); }
+.btn-spin:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-again { width: 100%; background: var(--bg-card); color: var(--text-bright); border: 1px solid var(--border); padding: 14px; border-radius: 10px; font-family: 'Orbitron', monospace; font-size: 14px; cursor: pointer; letter-spacing: 2px; transition: all 0.2s; margin-top: 8px; }
+.btn-again:hover { border-color: var(--gold); color: var(--gold); }
+
+/* RESULT */
+.result-box { border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 20px; border: 1px solid; }
+.result-box.win { background: rgba(63,185,80,0.1); border-color: var(--green); }
+.result-box.lose { background: rgba(248,81,73,0.1); border-color: var(--red); }
+.result-icon { font-size: 40px; margin-bottom: 8px; }
+.result-title { font-family: 'Orbitron', monospace; font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.result-box.win .result-title { color: var(--green); }
+.result-box.lose .result-title { color: var(--red); }
+.result-detail { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+.result-amount { font-family: 'Orbitron', monospace; font-size: 26px; font-weight: 700; margin: 8px 0; }
+.result-amount.pos { color: var(--green); }
+.result-amount.neg { color: var(--red); }
+
+.sum-info { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; text-align: center; margin-bottom: 16px; font-size: 14px; color: var(--text-muted); }
+.sum-info strong { color: var(--text-bright); font-family: 'Orbitron', monospace; }
+
+/* INFO */
+.info-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 12px; }
+.info-card h3 { font-family: 'Orbitron', monospace; font-size: 13px; color: var(--gold); margin-bottom: 14px; letter-spacing: 1px; }
+.info-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.info-row:last-child { border-bottom: none; }
+.info-row .val { font-family: 'Orbitron', monospace; font-weight: 700; }
+.val.green { color: var(--green); }
+.val.red { color: var(--red); }
+.val.gold { color: var(--gold); }
+.save-btn { width: 100%; background: transparent; border: 1px solid var(--green); color: var(--green); padding: 14px; border-radius: 10px; font-family: 'Orbitron', monospace; font-size: 14px; cursor: pointer; letter-spacing: 2px; transition: all 0.2s; margin-top: 8px; }
+.save-btn:hover { background: rgba(63,185,80,0.1); transform: translateY(-1px); }
+
+.file-preview { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: monospace; font-size: 12px; color: var(--text-muted); line-height: 1.8; white-space: pre; margin-bottom: 12px; overflow-x: auto; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 28px; font-size: 14px; transition: transform 0.3s; z-index: 999; white-space: nowrap; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.win-toast { border-color: var(--green); color: var(--green); }
+.toast.lose-toast { border-color: var(--red); color: var(--red); }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🎱 BINGO</h1>
+    <p>TRÒ CHƠI XỔ SỐ MAY MẮN</p>
+  </div>
+
+  <div id="balance-bar" class="balance-bar" style="display:none">
+    <div>
+      <div class="balance-label">Số dư tài khoản</div>
+      <div class="balance-amount" id="balance-display">0 đ</div>
+    </div>
+    <div class="balance-btns">
+      <button class="btn-sm" onclick="showScreen('menu')">📋 Menu</button>
+    </div>
+  </div>
+
+  <!-- SETUP -->
+  <div id="screen-setup" class="screen active">
+    <div class="setup-card">
+      <h2>CHÀO MỪNG</h2>
+      <p>Nhập số tiền ban đầu để bắt đầu chơi</p>
+      <div class="money-input">
+        <input type="number" id="init-money" placeholder="100000" min="1000" />
+        <span>đồng</span>
+      </div>
+      <button class="btn-start" onclick="startGame()">BẮT ĐẦU →</button>
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <div id="screen-menu" class="screen">
+    <div class="menu-grid">
+      <div class="menu-btn" onclick="showScreen('game1')">
+        <div class="m-num">CHỨC NĂNG 01</div>
+        <div class="m-title">Bingo 1 Số</div>
+        <div class="m-desc">Đoán 1 trong 3 số xổ, thắng nhận gấp đôi tiền cược</div>
+      </div>
+      <div class="menu-btn" onclick="showScreen('game2')">
+        <div class="m-num">CHỨC NĂNG 02</div>
+        <div class="m-title">Chọn 2 Số Trùng</div>
+        <div class="m-desc">2 trong 3 số trùng nhau, thắng nhận gấp 3 lần</div>
+      </div>
+      <div class="menu-btn" onclick="showScreen('game3')">
+        <div class="m-num">CHỨC NĂNG 03</div>
+        <div class="m-title">Tài / Xỉu / Hòa</div>
+        <div class="m-desc">Đoán tổng 3 số, thắng nhận thêm 50% tiền cược</div>
+      </div>
+      <div class="menu-btn" onclick="showScreen('info')">
+        <div class="m-num">CHỨC NĂNG 04</div>
+        <div class="m-title">Xem Tài Khoản</div>
+        <div class="m-desc">Xem số dư và lịch sử chơi</div>
+      </div>
+    </div>
+    <div class="menu-btn full" onclick="showScreen('save')">
+      <div class="m-info">
+        <div class="m-num">CHỨC NĂNG 05</div>
+        <div class="m-title">Lưu Tài Khoản Ra File</div>
+        <div class="m-desc">Ghi số tiền còn lại vào file text</div>
+      </div>
+      <span style="font-size:24px">💾</span>
+    </div>
+  </div>
+
+  <!-- GAME 1: Bingo 1 số -->
+  <div id="screen-game1" class="screen">
+    <button class="back-btn" onclick="showScreen('menu')">← Quay lại Menu</button>
+    <div class="game-title">🎯 BINGO 1 SỐ</div>
+    <div class="bingo-balls">
+      <div class="ball" id="g1-b1">?</div>
+      <div class="ball" id="g1-b2">?</div>
+      <div class="ball" id="g1-b3">?</div>
+    </div>
+    <div class="section-label">Chọn số bạn muốn đặt (0 - 9)</div>
+    <div class="num-grid" id="g1-nums"></div>
+    <div class="section-label">Số tiền cược</div>
+    <div class="bet-row">
+      <label>Cược:</label>
+      <input type="number" id="g1-bet" placeholder="Nhập số tiền..." min="1000" />
+      <span style="font-size:13px;color:var(--text-muted)">đ</span>
+    </div>
+    <div class="quick-bets" id="g1-quick"></div>
+    <div id="g1-result" style="display:none"></div>
+    <button class="btn-spin" id="g1-spin" onclick="playGame1()">🎰 XỔ SỐ NGAY</button>
+    <button class="btn-again" id="g1-again" style="display:none" onclick="resetGame('game1')">↺ CHƠI LẠI</button>
+  </div>
+
+  <!-- GAME 2: 2 số trùng -->
+  <div id="screen-game2" class="screen">
+    <button class="back-btn" onclick="showScreen('menu')">← Quay lại Menu</button>
+    <div class="game-title">🎰 CHỌN 2 SỐ TRÙNG</div>
+    <div class="bingo-balls">
+      <div class="ball" id="g2-b1">?</div>
+      <div class="ball" id="g2-b2">?</div>
+      <div class="ball" id="g2-b3">?</div>
+    </div>
+    <div class="section-label">Chọn số bạn muốn đặt (0 - 9)</div>
+    <div class="num-grid" id="g2-nums"></div>
+    <div class="section-label">Số tiền cược</div>
+    <div class="bet-row">
+      <label>Cược:</label>
+      <input type="number" id="g2-bet" placeholder="Nhập số tiền..." min="1000" />
+      <span style="font-size:13px;color:var(--text-muted)">đ</span>
+    </div>
+    <div class="quick-bets" id="g2-quick"></div>
+    <div id="g2-result" style="display:none"></div>
+    <button class="btn-spin" id="g2-spin" onclick="playGame2()">🎰 XỔ SỐ NGAY</button>
+    <button class="btn-again" id="g2-again" style="display:none" onclick="resetGame('game2')">↺ CHƠI LẠI</button>
+  </div>
+
+  <!-- GAME 3: Tài/Xỉu/Hòa -->
+  <div id="screen-game3" class="screen">
+    <button class="back-btn" onclick="showScreen('menu')">← Quay lại Menu</button>
+    <div class="game-title">⚖️ TÀI / XỈU / HÒA</div>
+    <div class="bingo-balls">
+      <div class="ball" id="g3-b1">?</div>
+      <div class="ball" id="g3-b2">?</div>
+      <div class="ball" id="g3-b3">?</div>
+    </div>
+    <div class="section-label">Chọn kết quả bạn đặt</div>
+    <div class="choice-grid">
+      <div class="choice-btn" id="c-xiu" onclick="selectChoice('xiu')">
+        XỈU<div class="sub">Tổng từ 0 đến 8</div>
+      </div>
+      <div class="choice-btn" id="c-hoa" onclick="selectChoice('hoa')">
+        HÒA<div class="sub">Tổng từ 9 đến 18</div>
+      </div>
+      <div class="choice-btn" id="c-tai" onclick="selectChoice('tai')">
+        TÀI<div class="sub">Tổng từ 19 đến 27</div>
+      </div>
+    </div>
+    <div class="section-label">Số tiền cược</div>
+    <div class="bet-row">
+      <label>Cược:</label>
+      <input type="number" id="g3-bet" placeholder="Nhập số tiền..." min="1000" />
+      <span style="font-size:13px;color:var(--text-muted)">đ</span>
+    </div>
+    <div class="quick-bets" id="g3-quick"></div>
+    <div id="g3-sum" style="display:none" class="sum-info"></div>
+    <div id="g3-result" style="display:none"></div>
+    <button class="btn-spin" id="g3-spin" onclick="playGame3()">🎰 XỔ SỐ NGAY</button>
+    <button class="btn-again" id="g3-again" style="display:none" onclick="resetGame('game3')">↺ CHƠI LẠI</button>
+  </div>
+
+  <!-- INFO -->
+  <div id="screen-info" class="screen">
+    <button class="back-btn" onclick="showScreen('menu')">← Quay lại Menu</button>
+    <div class="game-title">📊 THÔNG TIN TÀI KHOẢN</div>
+    <div class="info-card">
+      <h3>SỐ DƯ</h3>
+      <div class="info-row"><span>Số tiền ban đầu</span><span class="val gold" id="info-init">0 đ</span></div>
+      <div class="info-row"><span>Số tiền hiện tại</span><span class="val gold" id="info-current">0 đ</span></div>
+      <div class="info-row"><span>Lãi / Lỗ</span><span class="val" id="info-diff">0 đ</span></div>
+    </div>
+    <div class="info-card">
+      <h3>LỊCH SỬ CHƠI</h3>
+      <div id="history-list"><div style="text-align:center;color:var(--text-muted);padding:16px;font-size:13px">Chưa có lượt chơi nào</div></div>
+    </div>
+  </div>
+
+  <!-- SAVE -->
+  <div id="screen-save" class="screen">
+    <button class="back-btn" onclick="showScreen('menu')">← Quay lại Menu</button>
+    <div class="game-title">💾 LƯU FILE TXT</div>
+    <div class="info-card">
+      <h3>XEM TRƯỚC NỘI DUNG FILE</h3>
+      <div class="file-preview" id="file-preview-text"></div>
+      <button class="save-btn" onclick="saveToFile()">💾 TẢI FILE TXT VỀ MÁY</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let balance = 0, initBalance = 0, history = [];
+let g1sel = null, g2sel = null, g3sel = null;
+
+function fmt(n) { return Math.round(n).toLocaleString('vi-VN') + ' đ'; }
+
+function updateBalanceBar() {
+  document.getElementById('balance-display').textContent = fmt(balance);
+}
+
+function startGame() {
+  const v = parseInt(document.getElementById('init-money').value);
+  if (!v || v < 1000) { showToast('Nhập ít nhất 1,000 đồng!', 'lose'); return; }
+  balance = v;
+  initBalance = v;
+  document.getElementById('balance-bar').style.display = 'flex';
+  updateBalanceBar();
+  buildNumGrids();
+  showScreen('menu');
+}
+
+function buildNumGrids() {
+  ['g1-nums', 'g2-nums'].forEach((id, gi) => {
+    const g = document.getElementById(id);
+    g.innerHTML = '';
+    for (let i = 0; i <= 9; i++) {
+      const b = document.createElement('button');
+      b.className = 'num-btn';
+      b.textContent = i;
+      b.onclick = () => selectNum(gi === 0 ? 'g1' : 'g2', i, b, id);
+      g.appendChild(b);
+    }
+  });
+  ['g1-quick', 'g2-quick', 'g3-quick'].forEach((id, gi) => {
+    const d = document.getElementById(id);
+    d.innerHTML = '';
+    [5000, 10000, 20000, 50000, 100000].forEach(v => {
+      const b = document.createElement('button');
+      b.className = 'quick-bet';
+      b.textContent = fmt(v);
+      b.onclick = () => document.getElementById(['g1-bet', 'g2-bet', 'g3-bet'][gi]).value = v;
+      d.appendChild(b);
+    });
+  });
+}
+
+function selectNum(game, num, btn, gridId) {
+  document.querySelectorAll('#' + gridId + ' .num-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  if (game === 'g1') g1sel = num;
+  else g2sel = num;
+}
+
+function selectChoice(c) {
+  g3sel = c;
+  ['xiu', 'hoa', 'tai'].forEach(id => {
+    document.getElementById('c-' + id).classList.toggle('selected', id === c);
+  });
+}
+
+function showScreen(s) {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById('screen-' + s).classList.add('active');
+  if (s === 'info') renderInfo();
+  if (s === 'save') renderSavePreview();
+}
+
+function rollBingo() {
+  return [Math.floor(Math.random() * 10), Math.floor(Math.random() * 10), Math.floor(Math.random() * 10)];
+}
+
+async function animateBalls(prefix, nums) {
+  const balls = [
+    document.getElementById(prefix + '-b1'),
+    document.getElementById(prefix + '-b2'),
+    document.getElementById(prefix + '-b3')
+  ];
+  balls.forEach(b => { b.classList.remove('revealed'); b.textContent = '?'; });
+  await new Promise(r => setTimeout(r, 200));
+  for (let i = 0; i < 3; i++) {
+    await new Promise(r => setTimeout(r, 450));
+    balls[i].textContent = nums[i];
+    balls[i].classList.add('revealed');
+  }
+  await new Promise(r => setTimeout(r, 200));
+}
+
+function addHistory(type, bet, result) {
+  history.unshift({ type, bet, result, bal: balance, time: new Date().toLocaleTimeString('vi-VN') });
+  if (history.length > 30) history.pop();
+}
+
+async function playGame1() {
+  if (g1sel === null) { showToast('Hãy chọn 1 số trước!', 'lose'); return; }
+  const bet = parseInt(document.getElementById('g1-bet').value);
+  if (!bet || bet < 1000) { showToast('Nhập số tiền cược!', 'lose'); return; }
+  if (bet > balance) { showToast('Số dư không đủ!', 'lose'); return; }
+
+  document.getElementById('g1-spin').disabled = true;
+  document.getElementById('g1-result').style.display = 'none';
+
+  const nums = rollBingo();
+  await animateBalls('g1', nums);
+
+  const won = nums.includes(g1sel);
+  let change, msg;
+  if (won) {
+    change = bet;
+    balance += bet;
+    msg = `Số ${g1sel} xuất hiện trong [${nums.join(', ')}]! Thắng ${fmt(bet)}`;
+    addHistory('Bingo 1 Số', bet, '+' + fmt(bet));
+  } else {
+    change = -bet;
+    balance -= bet;
+    msg = `Số ${g1sel} không có trong [${nums.join(', ')}]. Thua ${fmt(bet)}`;
+    addHistory('Bingo 1 Số', bet, '-' + fmt(bet));
+  }
+  updateBalanceBar();
+  showResult('g1-result', won, change, msg);
+  document.getElementById('g1-spin').style.display = 'none';
+  document.getElementById('g1-again').style.display = 'block';
+  showToast(won ? '🎉 TRÚNG RỒI!' : '😢 Không trúng', won ? 'win' : 'lose');
+}
+
+async function playGame2() {
+  if (g2sel === null) { showToast('Hãy chọn 1 số trước!', 'lose'); return; }
+  const bet = parseInt(document.getElementById('g2-bet').value);
+  if (!bet || bet < 1000) { showToast('Nhập số tiền cược!', 'lose'); return; }
+  if (bet > balance) { showToast('Số dư không đủ!', 'lose'); return; }
+
+  document.getElementById('g2-spin').disabled = true;
+  document.getElementById('g2-result').style.display = 'none';
+
+  const nums = rollBingo();
+  await animateBalls('g2', nums);
+
+  const cnt = nums.filter(n => n === g2sel).length;
+  const won = cnt >= 2;
+  let change, msg;
+  if (won) {
+    change = bet * 2;
+    balance += bet * 2;
+    msg = `Số ${g2sel} xuất hiện ${cnt} lần trong [${nums.join(', ')}]! Thắng ${fmt(bet * 2)}`;
+    addHistory('2 Số Trùng', bet, '+' + fmt(bet * 2));
+  } else {
+    change = -bet;
+    balance -= bet;
+    msg = `Số ${g2sel} xuất hiện ${cnt} lần trong [${nums.join(', ')}]. Cần ≥ 2 lần. Thua ${fmt(bet)}`;
+    addHistory('2 Số Trùng', bet, '-' + fmt(bet));
+  }
+  updateBalanceBar();
+  showResult('g2-result', won, change, msg);
+  document.getElementById('g2-spin').style.display = 'none';
+  document.getElementById('g2-again').style.display = 'block';
+  showToast(won ? '🎉 TRÚNG RỒI!' : '😢 Không trúng', won ? 'win' : 'lose');
+}
+
+async function playGame3() {
+  if (!g3sel) { showToast('Hãy chọn Tài / Xỉu / Hòa!', 'lose'); return; }
+  const bet = parseInt(document.getElementById('g3-bet').value);
+  if (!bet || bet < 1000) { showToast('Nhập số tiền cược!', 'lose'); return; }
+  if (bet > balance) { showToast('Số dư không đủ!', 'lose'); return; }
+
+  document.getElementById('g3-spin').disabled = true;
+  document.getElementById('g3-result').style.display = 'none';
+  document.getElementById('g3-sum').style.display = 'none';
+
+  const nums = rollBingo();
+  await animateBalls('g3', nums);
+
+  const sum = nums[0] + nums[1] + nums[2];
+  let actual;
+  if (sum <= 8) actual = 'xiu';
+  else if (sum <= 18) actual = 'hoa';
+  else actual = 'tai';
+
+  const lblMap = { xiu: 'XỈU', hoa: 'HÒA', tai: 'TÀI' };
+  const sumEl = document.getElementById('g3-sum');
+  sumEl.innerHTML = `Tổng: <strong>${nums.join(' + ')} = ${sum}</strong> → Kết quả: <strong style="color:var(--gold)">${lblMap[actual]}</strong>`;
+  sumEl.style.display = 'block';
+
+  const won = g3sel === actual;
+  let change, msg;
+  if (won) {
+    change = Math.floor(bet * 0.5);
+    balance += change;
+    msg = `Bạn đặt ${lblMap[g3sel]}, kết quả ${lblMap[actual]}. Thắng thêm ${fmt(change)} (50% tiền cược)`;
+    addHistory('Tài/Xỉu/Hòa', bet, '+' + fmt(change));
+  } else {
+    change = -bet;
+    balance -= bet;
+    msg = `Bạn đặt ${lblMap[g3sel]}, kết quả là ${lblMap[actual]}. Thua ${fmt(bet)}`;
+    addHistory('Tài/Xỉu/Hòa', bet, '-' + fmt(bet));
+  }
+  updateBalanceBar();
+  showResult('g3-result', won, change, msg);
+  document.getElementById('g3-spin').style.display = 'none';
+  document.getElementById('g3-again').style.display = 'block';
+  showToast(won ? '🎉 TRÚNG RỒI!' : '😢 Không trúng', won ? 'win' : 'lose');
+}
+
+function showResult(id, won, change, msg) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="result-box ${won ? 'win' : 'lose'}">
+      <div class="result-icon">${won ? '🏆' : '😔'}</div>
+      <div class="result-title">${won ? 'CHIẾN THẮNG!' : 'THẤT BẠI'}</div>
+      <div class="result-detail">${msg}</div>
+      <div class="result-amount ${change > 0 ? 'pos' : 'neg'}">${change > 0 ? '+' : ''}${fmt(Math.abs(change))}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:6px">Số dư hiện tại: ${fmt(balance)}</div>
+    </div>`;
+}
+
+function resetGame(game) {
+  const map = { game1: { sel: 'g1sel', prefix: 'g1', betId: 'g1-bet', numId: 'g1-nums' }, game2: { sel: 'g2sel', prefix: 'g2', betId: 'g2-bet', numId: 'g2-nums' }, game3: { sel: 'g3sel', prefix: 'g3', betId: 'g3-bet', numId: null } };
+  const m = map[game];
+  if (game === 'game1') g1sel = null;
+  if (game === 'game2') g2sel = null;
+  if (game === 'game3') { g3sel = null; ['xiu', 'hoa', 'tai'].forEach(id => document.getElementById('c-' + id).classList.remove('selected')); document.getElementById('g3-sum').style.display = 'none'; }
+  if (m.numId) document.querySelectorAll('#' + m.numId + ' .num-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById(m.betId).value = '';
+  document.getElementById(m.prefix + '-result').style.display = 'none';
+  document.getElementById(m.prefix + '-spin').style.display = 'block';
+  document.getElementById(m.prefix + '-spin').disabled = false;
+  document.getElementById(m.prefix + '-again').style.display = 'none';
+  [1, 2, 3].forEach(i => {
+    const b = document.getElementById(m.prefix + '-b' + i);
+    b.textContent = '?';
+    b.classList.remove('revealed');
+  });
+}
+
+function renderInfo() {
+  document.getElementById('info-init').textContent = fmt(initBalance);
+  document.getElementById('info-current').textContent = fmt(balance);
+  const diff = balance - initBalance;
+  const el = document.getElementById('info-diff');
+  el.textContent = (diff >= 0 ? '+' : '') + fmt(Math.abs(diff));
+  el.className = 'val ' + (diff > 0 ? 'green' : diff < 0 ? 'red' : 'gold');
+
+  const hl = document.getElementById('history-list');
+  if (!history.length) {
+    hl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:16px;font-size:13px">Chưa có lượt chơi nào</div>';
+    return;
+  }
+  hl.innerHTML = history.map(h => `
+    <div class="info-row">
+      <div>
+        <div style="font-size:13px">${h.type}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${h.time} · Cược: ${fmt(h.bet)}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="val ${h.result.startsWith('+') ? 'green' : 'red'}">${h.result}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${fmt(h.bal)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderSavePreview() {
+  const diff = balance - initBalance;
+  const sign = diff >= 0 ? '+' : '';
+  const now = new Date();
+  const lines = [
+    '================================================',
+    '        BINGO - BÁO CÁO TÀI KHOẢN NGƯỜI CHƠI   ',
+    '================================================',
+    `Ngày   : ${now.toLocaleDateString('vi-VN')}`,
+    `Giờ    : ${now.toLocaleTimeString('vi-VN')}`,
+    '------------------------------------------------',
+    `Số tiền ban đầu  : ${fmt(initBalance)}`,
+    `Số tiền hiện tại : ${fmt(balance)}`,
+    `Lãi / Lỗ        : ${sign}${fmt(Math.abs(diff))}`,
+    '------------------------------------------------',
+    `TỔNG SỐ LƯỢT CHƠI: ${history.length}`,
+    '------------------------------------------------',
+    'LỊCH SỬ CHI TIẾT:',
+    ...(history.length === 0 ? ['  Chưa có lượt chơi nào'] : history.map((h, i) =>
+      `${String(i + 1).padStart(2, '0')}. [${h.time}] ${h.type}\n    Cược: ${fmt(h.bet)} | Kết quả: ${h.result} | Số dư: ${fmt(h.bal)}`
+    )),
+    '================================================',
+    '        Chúc bạn may mắn lần sau!               ',
+    '================================================'
+  ].join('\n');
+  document.getElementById('file-preview-text').textContent = lines;
+}
+
+function saveToFile() {
+  renderSavePreview();
+  const content = document.getElementById('file-preview-text').textContent;
+  const blob = new Blob(['\ufeff' + content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'bingo_taikhoan.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ Đã lưu file thành công!', 'win');
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type === 'win' ? 'win-toast' : 'lose-toast');
+  setTimeout(() => t.className = 'toast', 2800);
+}
+</script>
+</body>
+</html>
